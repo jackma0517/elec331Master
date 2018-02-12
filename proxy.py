@@ -36,50 +36,70 @@ if __name__ == "__main__":
         filetouse = "/" + filename
         print("Filetouse:", filetouse)
 
-        """
         
         try:
             # Check wether the file exist in the cache
             f = open(filetouse[1:], "r")
             outputdata = f.readlines()
+            print('Cache file opened')
             fileExist = "true"
+            print('Cache file opened')
+
             # ProxyServer finds a cache hit and generates a response message
             tcpCliSock.send("HTTP/1.0 200 OK\r\n")
             tcpCliSock.send("Content-Type:text/html\r\n")
-            # Fill in start.
-            # Fill in end.
+
+            #send the output data from file
+            tcpCliSock.send(outputdata)
+
             print('Read from cache')
 
         # Error handling for file not found in cache
         except IOError:
             if fileExist == "false":
                 # Create a socket on the proxyserver
-                c =  socket(AF_INET, SOCK_STREAM)
+                c = socket(AF_INET, SOCK_STREAM)
                 hostn = filename.replace("www.", "", 1)
-                print(hostn)
+                print("hostn: ", hostn)
                 try:
                     # Connect to the socket to port 80
+                    print('Connect to hostn')
                     c.connect((hostn, 80))
+
                     # Create a temporary file on this socket and ask port 80 for the file requested by the client
-                    fileobj = c.makefile('r', 0)
-                    fileobj.write("GET " + "http://" + filename + "HTTP / 1.0\n\n")
+                    print('Making temporary file')
+                    fileobj = c.makefile('rb')
+                    print('Writing to temporary file')
+                    fileobj.write("GET " + "http://" + filename + "HTTP / 1.1\r\n")
+
                     # Read the response into buffer
+                    print('Reading from buffer')
                     buffer = ""
+                    resp = c.recv(4096).decode()
+
+                    while resp:
+                        buffer = buffer + resp
+                        resp = c.recv(4096).decode()
 
                     # Create a new file in the cache for the requested file.
                     # Also send the response in the buffer to client socket
                     # and the corresponding file in the cache
+                    print('print buffer: ', buffer)
                     tmpFile = open("./" + filename, "wb")
-                    # Fill in start.
+                    tmpFile.write(buffer)
+                    print('print buffer: ', buffer)
+                    tcpCliSock.send(buffer)
+
+
                     # Fill in end.
                 except:
                     print("Illegal request")
             else:
-            # HTTP response message for file not found
+                # HTTP response message for file not found
+                pass
+                # Fill in start.
+                # Fill in end.
 
-            # Fill in start.
-            # Fill in end.
-    """
     # Close the client and the server sockets
     tcpCliSock.close()
     tcpSerSock.close()
