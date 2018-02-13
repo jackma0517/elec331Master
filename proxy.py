@@ -9,7 +9,6 @@ if __name__ == "__main__":
         sys.exit(2)
 
     #Create a server socket, bind it to a port and start listening
-    # home 192.168.2.121
 
     serverIP = sys.argv[1]
     port = 8888
@@ -56,10 +55,10 @@ if __name__ == "__main__":
             # Check wether the file exist in the cache
             print('Open file')
             f = open(filetouse[1:], "r")
-            buffer = f.readlines()
+            buffer = f.readline()
             print('Cache file opened')
             fileExist = "true"
-            print('Cache file opened')
+
 
             # ProxyServer finds a cache hit and generates a response message
             statusMessage = "HTTP/1.0 200 OK\r\n" + "Content-Type:text/html\r\n"
@@ -69,7 +68,7 @@ if __name__ == "__main__":
             #send the output data from file
             while buffer:
                 outputdata = outputdata + buffer
-                buffer = f.readlines()
+                buffer = f.readline()
 
             print('Read from cache')
             print("Sending cache content:")
@@ -91,53 +90,45 @@ if __name__ == "__main__":
                     c.connect((hostn, 80))
 
                     # Create a new message to send to new server
-                    newMessage =  "GET " + part + " HTTP/1.1\r\n" + "Host: " + hostn + "\r\n\r\n"
+                    newMessage = "GET " + part + " HTTP/1.1\r\n" + "Host: " + hostn + "\r\n\r\n"
                     print("Sending message to host: ")
                     print(newMessage)
                     c.send(newMessage.encode())
 
                     # Read the response into buffer
                     print('Reading into buffer')
-                    count = 1;
-                    buffer = ''
-                    recv = c.recv(1024)
+                    buffer = b''
+                    recv = c.recv(8192)
 
                     while recv:
-                        print('Reading ', count, " chunks")
-                        count = count + 1
-                        buffer = buffer + recv.decode()
-                        recv = c.recv(4096)
 
-                    #print('Response saved, sending: \n', buffer)
-                    tcpCliSock.send(buffer.encode())
+                        buffer = buffer + recv
+                        recv = c.recv(8192)
+
+                    print('Response saved, sending: \n', buffer.decode())
+                    tcpCliSock.send(buffer)
 
                     # Create a new file in the cache for the requested file.
                     # Also send the response in the buffer to client socket
                     # and the corresponding file in the cache
 
                     print("Creating cache file")
-                    tmpFile = open("./" + filename, "w+b")
-                    splitBuffer = buffer.split("\r\n")
+                    tmpFile = open("./" + filename, "wb")
                     print("Writing to cache")
-                    for string in splitBuffer:
-                        tmpFile.write(string + "\r\n")
-                    tmpFile.write("\r\n")
-                    print("Closing cache file")
+                    tmpFile.write(buffer)
                     tmpFile.close()
-
                     print("Closing socket")
                     tcpCliSock.close()
 
 
                 except:
-                    print("Illegal request")
-                    print("Unexpected error:", sys.exc_info()[0])
+                    print("Error: ", sys.exc_info()[0], sys.exc_info()[1])
+
             else:
                 # HTTP response message for file not found
                 pass
-                # Fill in start.
-                # Fill in end.
-    # Close the client and the server sockets
 
+
+    # Close the server sockets
     tcpSerSock.close()
 
